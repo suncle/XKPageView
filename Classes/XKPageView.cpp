@@ -48,7 +48,14 @@ bool XKPageView::init(Size size,XKPageViewDelegate *delegate)
         }else {
             current_offset = this -> getContentOffset().y;
         }
-        return true;
+        auto target = static_cast<Sprite *>(event -> getCurrentTarget());
+            Vec2 locationInNode = target->convertToNodeSpace(touch->getLocation());
+            Size s = target->getContentSize();
+            Rect rect = Rect(0, 0, s.width, s.height);
+            if(rect.containsPoint(locationInNode)){
+                return true;
+            }
+        return false;
     };
     listener -> onTouchMoved = [&](Touch *touch, Event *event){
         float start, end;
@@ -62,9 +69,9 @@ bool XKPageView::init(Size size,XKPageViewDelegate *delegate)
         float offset = end - start;
         // * 2的作用是调节滚动速度，需要调滑动速度的 可以改这个值
         if (_direction == ScrollView::Direction::HORIZONTAL)
-            this -> setContentOffset(Vec2(current_offset + offset * 2, 0));
+            this -> setContentOffset(Vec2(current_offset + offset, 0));
         else
-            this -> setContentOffset(Vec2(0, current_offset + offset * 2));
+            this -> setContentOffset(Vec2(0, current_offset + offset));
     };
     listener -> onTouchEnded = [&](Touch *touch, Event *event){
         float start = current_offset, end;
@@ -107,8 +114,8 @@ void XKPageView::adjust(float offset)
     
     if (current_index < 0) {
         current_index = 0;
-    }else if(current_index > 10){
-        current_index = 10;
+    }else if(current_index > pageCount - 1){
+        current_index = pageCount - 1;
     }
     
     if (_direction == ScrollView::Direction::HORIZONTAL) {
@@ -116,7 +123,9 @@ void XKPageView::adjust(float offset)
     }else {
         vec = Vec2(0, -( current_index * (pageSize.height)));
     }
+    if  (adjustCallback != NULL)
     this -> adjustCallback(this);
+    
     this -> setContentOffsetInDuration(vec, 0.15f);
 }
 
